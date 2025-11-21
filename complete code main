@@ -1,0 +1,103 @@
+/ --- LIBRERÍAS ---
+#include <DHT.h>
+
+// --- CONFIGURACIÓN SENSOR DHT11 ---
+#define DHTTYPE DHT11
+#define DHTPIN 9
+DHT dht(DHTPIN, DHTTYPE);
+
+// --- CONFIGURACIÓN SENSOR DE HUMEDAD DE TIERRA ---
+const int SENSOR_SECO = 295;     // Valor en aire
+const int SENSOR_MOJADO = 850;   // Valor en agua
+const int pinSensorTierra = A0;
+
+// --- CONFIGURACIÓN SENSOR DE NIVEL DE AGUA ---
+const int pinSensorAgua = A1;
+
+// --- CONFIGURACIÓN DE LEDs ---
+const int ledTierraBajo = 2;
+const int ledTierraMedio = 3;
+const int ledTierraAlto = 4;
+
+const int ledAguaBajo = 5;
+const int ledAguaMedio = 6;
+const int ledAguaAlto = 7;
+
+// --- VARIABLES ---
+int valorSensorTierra = 0;
+int humedadTierraPorcentaje = 0;
+int valorSensorAgua = 0;
+int nivelAguaPorcentaje = 0;
+
+void setup() {
+  Serial.begin(9600);
+  // IMPORTANTE: Quitamos el mensaje de bienvenida para no confundir a Python al inicio
+  // Serial.println("=== Inicializando Sensores ==="); 
+
+  dht.begin();
+
+  pinMode(ledTierraBajo, OUTPUT);
+  pinMode(ledTierraMedio, OUTPUT);
+  pinMode(ledTierraAlto, OUTPUT);
+
+  pinMode(ledAguaBajo, OUTPUT);
+  pinMode(ledAguaMedio, OUTPUT);
+  pinMode(ledAguaAlto, OUTPUT);
+  
+  delay(2000);
+}
+
+void loop() {
+  // 1. LECTURA DE SENSORES
+  float humedadAire = dht.readHumidity();
+  float temperatura = dht.readTemperature();
+
+  // Tierra
+  valorSensorTierra = analogRead(pinSensorTierra);
+  humedadTierraPorcentaje = map(valorSensorTierra, SENSOR_SECO, SENSOR_MOJADO, 0, 100);
+  humedadTierraPorcentaje = constrain(humedadTierraPorcentaje, 0, 100);
+
+  // Agua
+  valorSensorAgua = analogRead(pinSensorAgua);
+  nivelAguaPorcentaje = map(valorSensorAgua, 0, 1023, 0, 100);
+  nivelAguaPorcentaje = constrain(nivelAguaPorcentaje, 0, 100);
+
+  // Validación básica del DHT11
+  if (isnan(humedadAire) || isnan(temperatura)) {
+    humedadAire = 0.0;
+    temperatura = 0.0;
+  }
+
+  // 2. ENVÍO DE DATOS A PYTHON (FORMATO JSON)
+  // Construimos el mensaje exacto: {"tierra": 45, "agua": 80, "aire": 50.0, "temp": 24.5}
+  
+  String json = "{";
+  json += "\"tierra\": " + String(humedadTierraPorcentaje) + ",";
+  json += "\"agua\": " + String(nivelAguaPorcentaje) + ",";
+  json += "\"aire\": " + String(humedadAire) + ",";
+  json += "\"temp\": " + String(temperatura);
+  json += "}";
+
+  Serial.println(json); // ¡IMPORTANTE! println envía el salto de línea que Python espera
+
+  // 3. LÓGICA DE LEDS (Se mantiene igual)
+  // LEDs Tierra
+  if (humedadTierraPorcentaje < 30) {
+    digitalWrite(ledTierraBajo, HIGH); digitalWrite(ledTierraMedio, LOW); digitalWrite(ledTierraAlto, LOW);
+  } else if (humedadTierraPorcentaje < 70) {
+    digitalWrite(ledTierraBajo, LOW); digitalWrite(ledTierraMedio, HIGH); digitalWrite(ledTierraAlto, LOW);
+  } else {
+    digitalWrite(ledTierraBajo, LOW); digitalWrite(ledTierraMedio, LOW); digitalWrite(ledTierraAlto, HIGH);
+  }
+
+  // LEDs Agua
+  if (nivelAguaPorcentaje < 30) {
+    digitalWrite(ledAguaBajo, HIGH); digitalWrite(ledAguaMedio, LOW); digitalWrite(ledAguaAlto, LOW);
+  } else if (nivelAguaPorcentaje < 70) {
+    digitalWrite(ledAguaBajo, LOW); digitalWrite(ledAguaMedio, HIGH); digitalWrite(ledAguaAlto, LOW);
+  } else {
+    digitalWrite(ledAguaBajo, LOW); digitalWrite(ledAguaMedio, LOW); digitalWrite(ledAguaAlto, HIGH);
+  }
+
+  delay(2000); // Espera antes de enviar el siguiente dato
+}
