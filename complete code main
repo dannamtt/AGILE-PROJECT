@@ -1,17 +1,17 @@
-/ --- LIBRERÍAS ---
+/ --- LIBRARIES TO INCLUDE ---
 #include <DHT.h>
 
-// --- CONFIGURACIÓN SENSOR DHT11 ---
+// --- SENSOR DHT11 CONFIG ---
 #define DHTTYPE DHT11
 #define DHTPIN 9
 DHT dht(DHTPIN, DHTTYPE);
 
-// --- CONFIGURACIÓN SENSOR DE HUMEDAD DE TIERRA ---
+// --- EARTH HUMIDITY SENSOR CONFIG ---
 const int SENSOR_SECO = 295;     // Valor en aire
 const int SENSOR_MOJADO = 850;   // Valor en agua
 const int pinSensorTierra = A0;
 
-// --- CONFIGURACIÓN SENSOR DE NIVEL DE AGUA ---
+// --- WATER LEVEL SENSOR CONGIF ---
 const int pinSensorAgua = A1;
 
 // --- CONFIGURACIÓN DE LEDs ---
@@ -48,7 +48,7 @@ void setup() {
 }
 
 void loop() {
-  // 1. LECTURA DE SENSORES
+  // 1. SENSORS READINGS 
   float humedadAire = dht.readHumidity();
   float temperatura = dht.readTemperature();
 
