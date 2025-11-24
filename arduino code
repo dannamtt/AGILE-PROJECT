@@ -1,0 +1,97 @@
+// --- CONFIGURACIÓN SENSOR DE HUMEDAD DE TIERRA ---
+const int SENSOR_SECO = 295;     // Valor en aire
+const int SENSOR_MOJADO = 850;   // Valor en agua
+const int pinSensorTierra = A0;
+
+// --- CONFIGURACIÓN SENSOR DE NIVEL DE AGUA ---
+const int pinSensorAgua = A1;
+
+// --- CONFIGURACIÓN DE LEDs ---
+const int ledTierraBajo = 2;
+const int ledTierraMedio = 3;
+const int ledTierraAlto = 4;
+
+const int ledAguaBajo = 5;
+const int ledAguaMedio = 6;
+const int ledAguaAlto = 7;
+
+// --- VARIABLES ---
+int valorSensorTierra = 0;
+int humedadTierraPorcentaje = 0;
+int valorSensorAgua = 0;
+int nivelAguaPorcentaje = 0;
+
+void setup() {
+  Serial.begin(9600);
+  
+  // Inicializamos la semilla aleatoria usando ruido de un pin vacío
+  // Esto hace que los números "random" sean distintos cada vez que enciendes el Arduino
+  randomSeed(analogRead(A5)); 
+
+  pinMode(ledTierraBajo, OUTPUT);
+  pinMode(ledTierraMedio, OUTPUT);
+  pinMode(ledTierraAlto, OUTPUT);
+
+  pinMode(ledAguaBajo, OUTPUT);
+  pinMode(ledAguaMedio, OUTPUT);
+  pinMode(ledAguaAlto, OUTPUT);
+  
+  delay(2000);
+}
+
+void loop() {
+  // 1. LECTURA DE SENSORES REALES
+  
+  // --- Tierra ---
+  valorSensorTierra = analogRead(pinSensorTierra);
+  humedadTierraPorcentaje = map(valorSensorTierra, SENSOR_SECO, SENSOR_MOJADO, 0, 100);
+  humedadTierraPorcentaje = constrain(humedadTierraPorcentaje, 0, 100);
+
+  // --- Agua ---
+  valorSensorAgua = analogRead(pinSensorAgua);
+  nivelAguaPorcentaje = map(valorSensorAgua, 0, 1023, 0, 100);
+  nivelAguaPorcentaje = constrain(nivelAguaPorcentaje, 0, 100);
+
+  // 2. SIMULACIÓN DE SENSORES FALTANTES (Aire y Temperatura)
+  // Generamos valores aleatorios realistas
+  
+  // Humedad Aire: Número entero entre 40% y 70%
+  int humedadAire = random(40, 70); 
+  
+  // Temperatura: Número decimal entre 20.0 y 30.0
+  // random(200, 300) da un entero (ej: 245), al dividir por 10.0 da float (24.5)
+  float temperatura = random(200, 300) / 10.0; 
+
+  // 3. ENVÍO DE DATOS A PYTHON (FORMATO JSON COMPLETO)
+  // Python recibirá el paquete completo, creyendo que tienes todos los sensores.
+  
+  String json = "{";
+  json += "\"tierra\": " + String(humedadTierraPorcentaje) + ",";
+  json += "\"agua\": " + String(nivelAguaPorcentaje) + ",";
+  json += "\"aire\": " + String(humedadAire) + ",";
+  json += "\"temp\": " + String(temperatura);
+  json += "}";
+
+  Serial.println(json); // Salto de línea necesario para Python
+
+  // 4. LÓGICA DE LEDS (Se mantiene igual)
+  
+  // LEDs Tierra
+  if (humedadTierraPorcentaje < 30) {
+    digitalWrite(ledTierraBajo, HIGH); digitalWrite(ledTierraMedio, LOW); digitalWrite(ledTierraAlto, LOW);
+  } else if (humedadTierraPorcentaje < 70) {
+    digitalWrite(ledTierraBajo, LOW); digitalWrite(ledTierraMedio, HIGH); digitalWrite(ledTierraAlto, LOW);
+  } else {
+    digitalWrite(ledTierraBajo, LOW); digitalWrite(ledTierraMedio, LOW); digitalWrite(ledTierraAlto, HIGH);
+  }
+
+  // LEDs Agua
+  if (nivelAguaPorcentaje < 30) {
+    digitalWrite(ledAguaBajo, HIGH); digitalWrite(ledAguaMedio, LOW); digitalWrite(ledAguaAlto, LOW);
+  } else if (nivelAguaPorcentaje < 70) {
+    digitalWrite(ledAguaBajo, LOW); digitalWrite(ledAguaMedio, HIGH); digitalWrite(ledAguaAlto, LOW);
+  } else {
+    digitalWrite(ledAguaBajo, LOW); digitalWrite(ledAguaMedio, LOW); digitalWrite(ledAguaAlto, HIGH);
+  }
+
+  delay(2000); // Enviar datos c
