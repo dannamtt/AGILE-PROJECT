@@ -1,0 +1,87 @@
+import serial
+import json
+import firebase_admin
+from firebase_admin import credentials, firestore
+from datetime import datetime
+import time
+import threading
+
+
+# --- CONFIGURACIÓN ---
+# 1. Cambia esto por la ruta a tu archivo de credenciales de Firebase
+CRED_PATH = 'mi-cultivo-hidroponico-firebase-adminsdk-fbsvc-870f495b6f.json'
+
+
+# 2. Cambia esto por el puerto serial de tu Arduino
+SERIAL_PORT = 'COM3'
+BAUD_RATE = 9600
+
+
+# --- INICIALIZACIÓN DE FIREBASE ---
+try:
+    cred = credentials.Certificate(CRED_PATH)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    print("Conexión con Firebase exitosa.")
+except Exception as e:
+    print(f"Error al conectar con Firebase: {e}")
+    exit()
+
+
+# --- CONEXIÓN CON ARDUINO ---
+try:
+    arduino = serial.Serial(port=SERIAL_PORT, baudrate=BAUD_RATE, timeout=.1)
+    print(f"Conectado a Arduino en el puerto {SERIAL_PORT}.")
+    time.sleep(2) # Dar tiempo a que la conexión serial se estabilice
+except Exception as e:
+    print(f"Error al conectar con Arduino: {e}")
+    exit()
+
+
+# --- FUNCIÓN PARA ENVIAR DATOS A FIREBASE ---
+def send_data_to_firebase():
+    """Lee datos del Arduino y los sube a Firestore."""
+    while True:
+        try:
+            data = arduino.readline().decode('utf-8').rstrip()
+            if data and data.startswith('{'):
+                print(f"Dato recibido: {data}")
+                sensor_data = json.loads(data)
+                sensor_data['timestamp'] = datetime.now()
+                db.collection('lecturas_sensores').add(sensor_data)
+                print("Dato enviado a Firestore.")
+        except Exception as e:
+            print(f"Error leyendo del Arduino o enviando a Firebase: {e}")
+            time.sleep(5)
+
+
+# --- FUNCIÓN PARA ESCUCHAR COMANDOS DE FIREBASE ---
+def on_snapshot(doc_snapshot, changes, read_time):
+    """Callback que se activa cuando hay cambios en el documento de control."""
+    for change in changes:
+        if change.type.name == 'MODIFIED':
+            data = change.document.to_dict()
+            print(f"Comando recibido: {data}")
+           
+            if data.get('activar_bomba_ph'):
+                arduino.write(b'PUMP_PH_ON\n')
+                print("Enviando comando PUMP_PH_ON a Arduino.")
+                # Resetear el estado en Firebase para evitar reactivación
+                change.document.reference.update({'activar_bomba_ph': False})
+           
+            if data.get('activar_bomba_nutrientes'):
+                arduino.write(b'PUMP_NUTRI_ON\n')
+                print("Enviando comando PUMP_NUTRI_ON a Arduino.")
+                # Resetear el estado en Firebase
+                change.document.reference.update({'activar_bomba_nutrientes': False})
+
+
+# Iniciar el listener de comandos en un hilo separado
+doc_ref = db.collection('control_actuadores').document('estado_bombas')
+doc_watch = doc_ref.on_snapshot(on_snapshot)
+print("Escuchando comandos desde Firebase...")
+
+
+# --- INICIAR EL BUCLE DE LECTURA DE SENSORES ---
+# Esto se ejecuta en el hilo principal
+send_data_to_firebase()
