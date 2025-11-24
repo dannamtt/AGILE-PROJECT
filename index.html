@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control Hidropónico</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+
+        <header class="mb-8 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white">🌿 Smart Hydroponics Dashboard</h1>
+                <p class="text-gray-400 mt-1">Fabrizzio & Team - Monitoreo en tiempo real.</p>
+            </div>
+
+            <div class="flex gap-3 flex-wrap items-center">
+                <button id="btn-save"
+                        class="btn bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg"
+                        onclick="guardarDatos()">
+                    Guardar datos
+                </button>
+
+                <button id="btn-view"
+                        class="btn bg-slate-600 hover:bg-slate-700 text-white font-semibold px-4 py-2 rounded-lg"
+                        onclick="verResultados()">
+                    Ver resultados
+                </button>
+
+                <div id="connection-status" class="btn bg-red-600 text-white font-semibold px-4 py-2 rounded-lg">
+                    Desconectado
+                </div>
+            </div>
+        </header>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            <div class="card text-center">
+                <p class="text-gray-400">Humedad Tierra</p>
+                <p id="val-tierra" class="metric-value text-blue-400">-- %</p>
+            </div>
+
+            <div class="card text-center">
+                <p class="text-gray-400">Nivel de Agua</p>
+                <p id="val-agua" class="metric-value text-cyan-400">-- %</p>
+            </div>
+
+            <div class="card text-center">
+                <p class="text-gray-400">Temp. Aire (Simulado)</p>
+                <p id="val-temp" class="metric-value text-orange-400">-- °C</p>
+            </div>
+
+            <div class="card text-center">
+                <p class="text-gray-400">Humedad Aire (Simulado)</p>
+                <p id="val-aire" class="metric-value text-indigo-400">-- %</p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            <div class="lg:col-span-2 card">
+                <h2 class="text-xl font-bold mb-4">📈 Historial en Vivo (Tierra y Agua)</h2>
+                <canvas id="historyChart"></canvas>
+            </div>
+
+            <div class="card flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold mb-4">🧠 Diagnóstico IA</h2>
+                    <div id="ai-recommendation" class="bg-gray-700 p-4 rounded-lg text-yellow-300 min-h-[80px]">
+                        Esperando datos...
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-bold mt-6 mb-4">🕹 Control Manual</h2>
+                    <div class="space-y-3">
+                        <button onclick="controlPump('bomba_ph')" class="btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                            Activar Bomba 1 (pH)
+                        </button>
+                        <button onclick="controlPump('bomba_nutrientes')" class="btn w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                            Activar Bomba 2 (Nutrientes)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="alert-banner" class="hidden fixed bottom-4 right-4 card bg-red-600 text-white font-bold p-4 rounded-lg shadow-lg z-50">
+            ⚠️ ¡Alerta! Parámetro fuera de rango.
+        </div>
+
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
